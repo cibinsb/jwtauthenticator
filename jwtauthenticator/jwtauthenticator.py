@@ -12,13 +12,14 @@ class JSONWebTokenLoginHandler(BaseHandler):
         header_name = self.authenticator.header_name
         param_name = self.authenticator.param_name
         header_is_authorization = self.authenticator.header_is_authorization
-
         auth_header_content = self.request.headers.get(header_name, "")
         auth_cookie_content = self.get_cookie("XSRF-TOKEN", "")
         signing_certificate = self.authenticator.signing_certificate
         secret = self.authenticator.secret
         username_claim_field = self.authenticator.username_claim_field
+        domains_claim_field = self.authenticator.domains_claim_field
         audience = self.authenticator.expected_audience
+        permitted_domains = self.authenticator.permitted_domains
         tokenParam = self.get_argument(param_name, default=False)
 
         if auth_header_content and tokenParam:
@@ -45,6 +46,9 @@ class JSONWebTokenLoginHandler(BaseHandler):
             claims = self.verify_jwt_with_claims(token, signing_certificate, audience)
         else:
            raise web.HTTPError(401)
+
+        if not set(claims[domains_claim_field]).intersection(set(permitted_domains)):
+            raise web.HTTPError(403)
 
         username = self.retrieve_username(claims, username_claim_field)
         user = self.user_from_username(username)
@@ -74,8 +78,10 @@ class JSONWebTokenLoginHandler(BaseHandler):
             opts = {"verify_aud": False}
         else:
             opts = {}
-        
+
         return jwt.decode(json_web_token, secret, algorithms=list(jwt.ALGORITHMS.SUPPORTED), audience=audience, options=opts)
+
+
 
     @staticmethod
     def retrieve_username(claims, username_claim_field):
@@ -94,6 +100,20 @@ class JSONWebTokenAuthenticator(Authenticator):
     """
     Accept the authenticated JSON Web Token from header.
     """
+    permitted_domains = Unicode(
+        default_value=[],
+        config=True,
+        help="""
+        List of all permitted domains to authorise the user.
+        """
+    )
+    domains_claim_field = Unicode(
+        default_value='domains',
+        config=True,
+        help="""
+        The field in the claims that contains the domains.
+        """
+    )
     signing_certificate = Unicode(
         config=True,
         help="""
@@ -122,7 +142,7 @@ class JSONWebTokenAuthenticator(Authenticator):
         default_value='Authorization',
         config=True,
         help="""HTTP header to inspect for the authenticated JSON Web Token.""")
-        
+
     header_is_authorization = Bool(
         default_value=True,
         config=True,
