@@ -49,10 +49,6 @@ class JSONWebTokenLoginHandler(BaseHandler):
             claims = self.verify_jwt_with_claims(token, signing_certificate, audience)
         else:
            raise web.HTTPError(401)
-        print("*"*120)
-        print(permitted_domains)
-        print(claims)
-        print("*"*120)
         if not set(claims[domains_claim_field]).intersection(set(permitted_domains)):
             print("authorisation Failed!!")
             raise web.HTTPError(403)
