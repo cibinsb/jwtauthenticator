@@ -3,15 +3,19 @@ from jupyterhub.auth import Authenticator
 from jupyterhub.auth import LocalAuthenticator
 from jupyterhub.utils import url_path_join
 from tornado import gen, web
-from traitlets import Unicode, Bool
+from traitlets import Unicode, Bool, List
 from jose import jwt
 
 class JSONWebTokenLoginHandler(BaseHandler):
+
+    def options(self):
+        print("HTTP OPTIONS")
 
     def get(self):
         header_name = self.authenticator.header_name
         param_name = self.authenticator.param_name
         header_is_authorization = self.authenticator.header_is_authorization
+        permitted_domains = self.authenticator.permitted_domains
         auth_header_content = self.request.headers.get(header_name, "")
         auth_cookie_content = self.get_cookie("XSRF-TOKEN", "")
         signing_certificate = self.authenticator.signing_certificate
@@ -19,7 +23,6 @@ class JSONWebTokenLoginHandler(BaseHandler):
         username_claim_field = self.authenticator.username_claim_field
         domains_claim_field = self.authenticator.domains_claim_field
         audience = self.authenticator.expected_audience
-        permitted_domains = self.authenticator.permitted_domains
         tokenParam = self.get_argument(param_name, default=False)
 
         if auth_header_content and tokenParam:
@@ -27,7 +30,7 @@ class JSONWebTokenLoginHandler(BaseHandler):
         elif auth_header_content:
            if header_is_authorization:
               # we should not see "token" as first word in the AUTHORIZATION header, if we do it could mean someone coming in with a stale API token
-              if auth_header_content.split()[0] != "bearer":
+              if auth_header_content.split()[0] != "Bearer":
                  raise web.HTTPError(403)
               token = auth_header_content.split()[1]
            else:
@@ -46,10 +49,13 @@ class JSONWebTokenLoginHandler(BaseHandler):
             claims = self.verify_jwt_with_claims(token, signing_certificate, audience)
         else:
            raise web.HTTPError(401)
-
+        print("*"*120)
+        print(permitted_domains)
+        print(claims)
+        print("*"*120)
         if not set(claims[domains_claim_field]).intersection(set(permitted_domains)):
+            print("authorisation Failed!!")
             raise web.HTTPError(403)
-
         username = self.retrieve_username(claims, username_claim_field)
         user = self.user_from_username(username)
         self.set_login_cookie(user)
@@ -81,8 +87,6 @@ class JSONWebTokenLoginHandler(BaseHandler):
 
         return jwt.decode(json_web_token, secret, algorithms=list(jwt.ALGORITHMS.SUPPORTED), audience=audience, options=opts)
 
-
-
     @staticmethod
     def retrieve_username(claims, username_claim_field):
         # retrieve the username from the claims
@@ -100,13 +104,11 @@ class JSONWebTokenAuthenticator(Authenticator):
     """
     Accept the authenticated JSON Web Token from header.
     """
-    permitted_domains = Unicode(
-        default_value=[],
-        config=True,
-        help="""
-        List of all permitted domains to authorise the user.
-        """
+    permitted_domains = List(
+      default_value=[],
+      config=True,
     )
+
     domains_claim_field = Unicode(
         default_value='domains',
         config=True,
@@ -114,11 +116,11 @@ class JSONWebTokenAuthenticator(Authenticator):
         The field in the claims that contains the domains.
         """
     )
+
     signing_certificate = Unicode(
         config=True,
         help="""
         The public certificate of the private key used to sign the incoming JSON Web Tokens.
-
         Should be a path to an X509 PEM format certificate filesystem.
         """
     )
