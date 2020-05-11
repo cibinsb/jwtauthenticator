@@ -71,7 +71,12 @@ class JSONWebTokenLoginHandler(BaseHandler):
         else:
             opts = {}
         with open(signing_certificate, 'r') as rsa_public_key_file:
-            return jwt.decode(token, rsa_public_key_file.read(), audience=audience, options=opts)
+            try:
+                claims = jwt.decode(token, rsa_public_key_file.read(), audience=audience, options=opts)
+            except Exception as ex:
+                print(str(ex))
+                raise web.HTTPError(400)
+            return claims
 
     @staticmethod
     def verify_jwt_using_secret(json_web_token, secret, audience):
