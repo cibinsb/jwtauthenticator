@@ -1,4 +1,4 @@
-# JupyterHub tokenauthenticator - A JWT Token Authenticator for JupyterHub
+# JupyterHub tokenauthenticator - A JWT Token Authenticator for JupyterHub(forked from https://github.com/mogthesprog/jwtauthenticator)
 
 Authenticate to Jupyterhub using a query parameter for the JSONWebToken, or by an authenticating proxy that can set the Authorization header with the content of a JSONWebToken. Authorisation of users can be made through the domains claim in JSONWebToken by listing all the permitted list of domains in the cnfiguration file.
 
