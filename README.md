@@ -38,7 +38,7 @@ c.JSONWebTokenAuthenticator.domains_claim_field = 'domains'
 
 ## How to add configurations to Helm chart
 
-1. Add the configurations inline
+ Add the configurations inline
 ```
 hub:
   image:
@@ -58,7 +58,9 @@ hub:
             c.JSONWebTokenAuthenticator.permitted_domains = [''] # List of permitted domain names for authorisation
             c.JSONWebTokenAuthenticator.domains_claim_field = 'domains'
 ```
-2. Add the configurations under auth namespace
+or
+
+ Add the configurations under auth namespace
 ```
 hub:
   image:
