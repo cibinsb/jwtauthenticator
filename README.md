@@ -1,6 +1,6 @@
 # JupyterHub tokenauthenticator - A JWT Token Authenticator for JupyterHub(forked from https://github.com/mogthesprog/jwtauthenticator)
 
-Authenticate to Jupyterhub using a query parameter for the JSONWebToken, or by an authenticating proxy that can set the Authorization header with the content of a JSONWebToken. Authorisation of users can be made through the domains claim in JSONWebToken by listing all the permitted list of domains in the cnfiguration file.
+Authenticate to Jupyterhub using a query parameter for the JSONWebToken, or by an authenticating proxy that can set the Authorization header with the content of a JSONWebToken. Authorisation of a user can done by comparing domains claims field in the Jwt against the list of values defined in the permitted_domains during configuration and if any one of these values match, user get successfully authorised otherwise 403 will be raised.
 
 ## Installation
 
@@ -20,9 +20,11 @@ pip install -e .
 ## Configuration
 
 You should edit your :file:`jupyterhub_config.py` to set the authenticator class,
-You'll also need to set some configuration options including the location of the signing certificate (in PEM format), field containing the userPrincipalName or sAMAccountName/username, and the expected audience of the JSONWebToken. This last part is optional, if you set audience to an empty string then the authenticator will skip the validation of that field.
+You'll also need to set some configuration options including the location of the signing certificate (in PEM format), field containing the userPrincipalName or sAMAccountName/username, and the expected audience of the JSONWebToken. This last part is optional, if you set audience to an empty string then the authenticator will skip the validation of that field. Authorisation is enabled by default, if the permitted_domains value is empty then authenticator class will respond with 403. 
 
 ```
+# To add the custom authenticator class
+c.JupyterHub.authenticator_class = 'jwtauthenticator.jwtauthenticator.JSONWebTokenAuthenticator'
 # one of "secret" or "signing_certificate" must be given.  If both, then "secret" will be the signing method used.
 c.JSONWebTokenAuthenticator.secret = '<insert-256-bit-secret-key-here>'            # The secrect key used to generate the given token
 # -OR-
@@ -46,6 +48,8 @@ hub:
          tag: '<version>'
   extraConfig:  
         newConfig: |
+            # To add the custom authenticator class
+            c.JupyterHub.authenticator_class = 'jwtauthenticator.jwtauthenticator.JSONWebTokenAuthenticator'
             # one of "secret" or "signing_certificate" must be given.  If both, then "secret" will be the signing method used.
             c.JSONWebTokenAuthenticator.secret = '<insert-256-bit-secret-key-here>'            # The secrect key used to generate the given token
             # -OR-
